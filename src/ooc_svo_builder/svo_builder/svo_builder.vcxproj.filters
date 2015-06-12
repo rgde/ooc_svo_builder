@@ -47,13 +47,7 @@
     <ClInclude Include="Buffer.h">
       <Filter>Header Files\util</Filter>
     </ClInclude>
-    <ClInclude Include="DataPoint.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
     <ClInclude Include="geometry_primitives.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util.h">
       <Filter>Header Files\util</Filter>
     </ClInclude>
     <ClInclude Include="intersection.h">
@@ -66,6 +60,12 @@
       <Filter>Header Files\util</Filter>
     </ClInclude>
     <ClInclude Include="octree_io.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="svo_builder_util.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="VoxelData.h">
       <Filter>Header Files\util</Filter>
     </ClInclude>
   </ItemGroup>

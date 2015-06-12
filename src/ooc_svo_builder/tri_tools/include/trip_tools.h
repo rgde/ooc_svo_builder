@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include "tri_tools.h"
+#include "file_tools.h"
 
 using namespace std;
 using namespace trimesh;
@@ -24,7 +25,7 @@ struct TripInfo {
 	// construct from TriInfo
 	TripInfo(const TriInfo &t) : base_filename(t.base_filename), version(t.version), geometry_only(t.geometry_only), gridsize(0), mesh_bbox(t.mesh_bbox), n_triangles(t.n_triangles), n_partitions(0) {} 
 
-	void print(){
+	void print() const{
 		cout << "  base_filename: " << base_filename << endl;
 		cout << "  trip version: " << version << endl;
 		cout << "  geometry only: " << geometry_only << endl;
@@ -37,11 +38,22 @@ struct TripInfo {
 			cout << "  partition " << i << " - tri_count: " << part_tricounts[i] << endl;
 		}
 	}
+
+	bool filesExist() const{
+		string header = base_filename + string(".trip");
+		for(size_t i = 0; i< n_partitions; i++){
+			if(part_tricounts[i] > 0){ // we only require the file to be there if it contains any triangles.
+				string part_data_filename = base_filename + string("_") + val_to_string(i) + string(".tripdata");
+				if(!file_exists(part_data_filename)){
+					return false;
+				}
+			}
+		}
+		return (file_exists(header));
+	}
 };
 
-// inline stuff
-
-inline int parseTripHeader(std::string &filename, TripInfo &t){
+inline int parseTripHeader(const std::string &filename, TripInfo &t){
 	ifstream file;
 	file.open(filename.c_str(), ios::in);
 
@@ -98,7 +110,7 @@ inline void writeTripHeader(const std::string &filename, const TripInfo &t){
 	outfile << "gridsize " << t.gridsize << endl;
 	outfile << "n_triangles " << t.n_triangles << endl;
 	outfile << "bbox  " << t.mesh_bbox.min[0] << " " << t.mesh_bbox.min[1] << " " << t.mesh_bbox.min[2] << " " << t.mesh_bbox.max[0] << " " 
-			<< t.mesh_bbox.max[1] << " " << t.mesh_bbox.max[2] << endl;
+		<< t.mesh_bbox.max[1] << " " << t.mesh_bbox.max[2] << endl;
 #ifdef BINARY_VOXELIZATION
 	outfile << "geo_only " << 1 << endl;
 #else

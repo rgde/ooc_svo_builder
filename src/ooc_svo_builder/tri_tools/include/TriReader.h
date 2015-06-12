@@ -17,13 +17,14 @@ class TriReader{
 	size_t buffersize; 
 	Triangle* buffer;
 
-	FILE* file2;
+	FILE* file;
 
 public:
 	TriReader();
 	TriReader(const TriReader&);
 	TriReader(const std::string &filename, size_t n_triangles, size_t buffersize);
 	void getTriangle(Triangle& t);
+	Triangle getTriangle();
 	bool hasNext();
 	~TriReader();
 private:
@@ -42,9 +43,20 @@ inline TriReader::TriReader(const std::string &filename, size_t n_triangles, siz
 	// prepare buffer
 	buffer = new Triangle[buffersize];
 	// prepare file
-	file2 = fopen(filename.c_str(), "rb");
+	file = fopen(filename.c_str(), "rb");
 	// fill Buffer
 	fillBuffer();
+}
+
+inline Triangle TriReader::getTriangle(){
+	if(current_tri == buffersize){ // at end of buffer, refill it
+		fillBuffer();
+		current_tri = 0;
+	}
+	Triangle t = buffer[current_tri]; // assign triangle from buffer
+	current_tri++; // set index for next triangle
+	n_served++;
+	return t;
 }
 
 inline void TriReader::getTriangle(Triangle& t){
@@ -63,12 +75,12 @@ inline bool TriReader::hasNext(){
 
 inline void TriReader::fillBuffer(){
 	size_t readcount = min(buffersize, n_triangles - n_read); // don't read more than there are
-	readTriangles(file2,buffer[0],readcount); // read new triangles
+	readTriangles(file,buffer[0],readcount); // read new triangles
 	n_read += readcount; // update the number of tri's we've read
 }
 
 inline TriReader::~TriReader(){
 	delete buffer;
-	fclose(file2);
+	fclose(file);
 }
 #endif

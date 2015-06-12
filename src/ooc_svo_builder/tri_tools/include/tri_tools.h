@@ -5,6 +5,7 @@
 #include <fstream>
 #include <stdio.h>
 #include "tri_util.h"
+#include "file_tools.h"
 
 using namespace std;
 
@@ -18,7 +19,8 @@ struct TriInfo{
 
 	TriInfo() : base_filename(""), version(version), geometry_only(geometry_only), n_triangles(0), mesh_bbox(AABox<vec3>()) {} // default constructor
 
-	void print(){
+	// print out Tri information
+	void print() const{
 		cout << "  base_filename: " << base_filename << endl;
 		cout << "  tri version: " << version << endl;
 		cout << "  geometry only: " << geometry_only << endl;
@@ -26,78 +28,58 @@ struct TriInfo{
 		cout << "  bbox min: " << mesh_bbox.min[0] << " " << mesh_bbox.min[1] << " " << mesh_bbox.min[2] << endl;
 		cout << "  bbox max: " << mesh_bbox.max[0] << " " << mesh_bbox.max[1] << " " << mesh_bbox.max[2] << endl;
 	}
+
+	// check if all files required by Tri exist
+	bool filesExist() const{
+		string header = base_filename + string(".tri");
+		string tridata = base_filename + string(".tridata");
+		return (file_exists(header) && file_exists(tridata));
+	}
 };
-
-// FSTREAM IO for Triangles
-inline void readTriangle(ifstream &file, Triangle &t){
-#ifdef BINARY_VOXELIZATION
-	file.read(reinterpret_cast<char*> (& t.v0[0]), 9*sizeof(float));
-#else
-	file.read(reinterpret_cast<char*> (& t.v0[0]), 12*sizeof(float));
-#endif
-}
-
-inline void readTriangles(ifstream &file, Triangle &t, size_t howmany){
-#ifdef BINARY_VOXELIZATION
-	file.read(reinterpret_cast<char*> (& t.v0[0]), howmany*9*sizeof(float));
-#else
-	file.read(reinterpret_cast<char*> (& t.v0[0]), howmany*12*sizeof(float));
-#endif
-}
-
-inline void writeTriangle(ofstream &file, Triangle &t){
-#ifdef BINARY_VOXELIZATION
-	file.write(reinterpret_cast<char*> (& t.v0[0]), 9*sizeof(float));
-#else
-	file.write(reinterpret_cast<char*> (& t.v0[0]), 12*sizeof(float));
-#endif
-}
-
-inline void writeTriangles(ofstream &file, Triangle &t, size_t howmany){
-#ifdef BINARY_VOXELIZATION
-	file.write(reinterpret_cast<char*> (& t.v0[0]), howmany*9*sizeof(float));
-#else
-	file.write(reinterpret_cast<char*> (& t.v0[0]), howmany*12*sizeof(float));
-#endif
-}
 
 // STDIO IO for Triangles
 inline void readTriangle(FILE* f, Triangle &t){
-#ifdef BINARY_VOXELIZATION
-	fread(&t, 9*sizeof(float), 1, f);
-#else
-	fread(&t, 12*sizeof(float), 1, f);
-#endif
+	size_t read = fread(&t, TRIANGLE_SIZE*sizeof(float), 1, f);
 }
 
 inline void readTriangles(FILE* f, Triangle &t, size_t howmany){
-#ifdef BINARY_VOXELIZATION
-	fread(&t, 9*sizeof(float), howmany, f);
-#else
-	fread(&t, 12*sizeof(float), howmany, f);
-#endif
+	size_t read = fread(&t, TRIANGLE_SIZE*sizeof(float), howmany, f);
 }
 
 inline void writeTriangle(FILE* f, Triangle &t){
-#ifdef BINARY_VOXELIZATION
-	fwrite(&t, 9*sizeof(float), 1, f);
-#else
-	fwrite(&t, 12*sizeof(float), 1, f);
-#endif
+	fwrite(&t, TRIANGLE_SIZE*sizeof(float), 1, f);
 }
 
 inline void writeTriangles(FILE* f, Triangle &t, size_t howmany){
-#ifdef BINARY_VOXELIZATION
-	fwrite(&t, 9*sizeof(float), howmany, f);
-#else
-	fwrite(&t, 12*sizeof(float), howmany, f);
-#endif
+	fwrite(&t, TRIANGLE_SIZE*sizeof(float), howmany, f);
 }
 
-// Parsing a .tri header filem store info in TriInfo struct
+// FSTREAM IO for Triangles (deprecated - this slow)
+inline void readTriangle(ifstream &file, Triangle &t){
+	file.read(reinterpret_cast<char*> (&t.v0[0]), TRIANGLE_SIZE*sizeof(float));
+}
+
+inline void readTriangles(ifstream &file, Triangle &t, size_t howmany){
+	file.read(reinterpret_cast<char*> (&t.v0[0]), howmany*TRIANGLE_SIZE*sizeof(float));
+}
+
+inline void writeTriangle(ofstream &file, Triangle &t){
+	file.write(reinterpret_cast<char*> (&t.v0[0]), TRIANGLE_SIZE*sizeof(float));
+}
+
+inline void writeTriangles(ofstream &file, Triangle &t, size_t howmany){
+	file.write(reinterpret_cast<char*> (&t.v0[0]), howmany*TRIANGLE_SIZE*sizeof(float));
+}
+
+// Parsing a .tri header file and store info in TriInfo struct
 inline int parseTriHeader(std::string filename, TriInfo &t){
 	ifstream file;
 	file.open(filename.c_str(), ios::in);
+
+	if(! file){
+		cout << "  Error: file " << filename << " does not exist." << endl;
+		return 0;
+	}
 
 	t.base_filename = filename.substr(0,filename.find_last_of("."));
 
@@ -140,7 +122,7 @@ inline void writeTriHeader(const std::string &filename, const TriInfo &t){
 	outfile << "ntriangles " << t.n_triangles << endl;
 	outfile << "geo_only " << t.geometry_only << endl;
 	outfile << "bbox  " << t.mesh_bbox.min[0] << " " << t.mesh_bbox.min[1] << " " << t.mesh_bbox.min[2] << " " << t.mesh_bbox.max[0] << " " 
-			<< t.mesh_bbox.max[1] << " " << t.mesh_bbox.max[2] << endl;
+		<< t.mesh_bbox.max[1] << " " << t.mesh_bbox.max[2] << endl;
 	outfile << "END" << endl;
 	outfile.close();
 }
